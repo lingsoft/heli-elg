@@ -4,8 +4,8 @@ plugins {
     id('com.google.cloud.tools.jib') version '3.1.4'
 }
 
-version = "0.1"
-group = "eu.elg.heli"
+version = "1.3"
+group = "eu.european-language-grid"
 
 repositories {
     mavenCentral()

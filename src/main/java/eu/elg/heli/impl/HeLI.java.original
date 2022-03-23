@@ -1,10 +1,4 @@
-package eu.elg.heli.impl;
 /*
-Copyright 2022 Ian Roberts
-
-Based on the original command-line HeLI.java (see HeLI.java.original)
-from https://zenodo.org/record/6077089.  Original copyright notice follows.
-
 Copyright 2020 Tommi Jauhiainen
 Copyright 2022 University of Helsinki
 Copyright 2022 Heidi Jauhiainen
@@ -46,29 +40,14 @@ limitations under the License.
 import java.io.*;
 import java.util.*;
 
-public class HeLI {
+class HeLI {
 
     private static TreeMap<String, TreeMap<String, Float>> gramDict;
     private static TreeMap<String, TreeMap<String, Float>> wordDict;
 	private static List<String> languageList = new ArrayList<String>();
-    public static final List<String> languageListFinal = new ArrayList<String>();
+    private static List<String> languageListFinal = new ArrayList<String>();
     private static List<String> languageListFinalOriginal = new ArrayList<String>();
-		// IR - added 3-to-2 code mapping
-		private static HashMap<String, String> languages3to2 = new HashMap<String, String>();
-		static {
-			try(InputStream str = HeLI.class.getResourceAsStream("/languages-3-to-2.csv");
-					BufferedReader rdr = new BufferedReader(new InputStreamReader(str, "UTF-8"))) {
-				String line;
-				while((line = rdr.readLine()) != null) {
-					int comma = line.indexOf(',');
-					languages3to2.put(line.substring(0, comma), line.substring(comma+1));
-				}
-			} catch(IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		// end 3-to-2 code mapping
-
+	
 // The following values are the ones used in Jauhiainen et al. 2017.
 
 	private static float usedmonos = (float) 0.0000005;
@@ -83,13 +62,18 @@ public class HeLI {
 	
 	private static int maxNgram = 6;
     
+    private static boolean useConfidence = false;
+    private static boolean filterMode = true;
+    private static boolean printDirect = true;
+    private static boolean readfromFile = false;
     private static boolean useRelevantLanguages = false;
     private static boolean printTopLanguages = false;
     private static boolean lastIsWord = true;
-
+    private static boolean useOnlineLanguages = false;
+    
     private static int numberTopLanguages = 1;
 		
-	public static void setup(String... args) {
+	public static void main(String[] args) {
         
         String allHelp = "HeLI off-the-shelf language identifier with language models for 200 languages (http://urn.fi/urn:nbn:fi:lb-2021062801). The program will read the <infile> and classify the language of each line as one of the 200 languages it knows and writes the results, one ISO 639-3 code per line, into file <outfile>. It can identify c. 3000 sentences per second using one core on a 2021 laptop and around 3 gigabytes of memory.\n" +
         
@@ -122,9 +106,45 @@ public class HeLI {
                 System.out.println(allHelp);
                 System.exit(0);
             }
+            if (args.length > processargs && args[processargs].equals("-c")) {
+                useConfidence = true;
+                processargs++;
+            }
             if (args.length > processargs && args[processargs].equals("-p")) {
                 lastIsWord = false;
                 processargs++;
+            }
+            if (args.length > processargs && args[processargs].equals("-ol")) {
+                useOnlineLanguages = true;
+                processargs++;
+            }
+            if (args.length > processargs && args[processargs].equals("-r")) {
+                if (args.length > processargs+1) {
+                    mysteryTexts = args[processargs+1];
+                    processargs++;
+                    processargs++;
+                    filterMode = false;
+                    readfromFile = true;
+                }
+                else {
+                    System.out.println("Invalid arguments.");
+                    System.out.println(allHelp);
+                    System.exit(0);
+                }
+            }
+            if (args.length > processargs && args[processargs].equals("-w")) {
+                if (args.length > processargs+1) {
+                    resultsFile = args[processargs+1];
+                    processargs++;
+                    processargs++;
+                    filterMode = false;
+                    printDirect = false;
+                }
+                else {
+                    System.out.println("Invalid arguments.");
+                    System.out.println(allHelp);
+                    System.exit(0);
+                }
             }
             if (args.length > processargs && args[processargs].equals("-l")) {
                 if (args.length > processargs+1) {
@@ -160,8 +180,17 @@ public class HeLI {
         }
         
         File file;
-
-        InputStream in = HeLI.class.getResourceAsStream("/languagelist");
+        
+        if (!filterMode && !printDirect) {
+            file = new File(resultsFile);
+            if (file.exists()) {
+                System.out.println(file);
+                System.out.println("The specified outfile already exists, define a new file.");
+                System.exit(0);
+            }
+        }
+        
+        InputStream in = HeLI.class.getResourceAsStream("languagelist");
         
 		BufferedReader reader = null;
 		
@@ -215,9 +244,7 @@ public class HeLI {
 			loadModel(usedsexts, languageCode, "LowGramModel6");
 			loadModel(usedwords, languageCode, "LowWordModel");
 		}
-
-    // main processing loop disabled
-    /*
+        
         if (!filterMode && readfromFile) {
             file = new File(mysteryTexts);
             
@@ -308,7 +335,6 @@ public class HeLI {
                 }
             }
         }
-     */
 	}
 	
 	private static void loadModel(float usedFeatureRF, String languageCode, String modelType) {
@@ -318,7 +344,7 @@ public class HeLI {
 	
         InputStream modelFile = null;
         
-        modelFile = HeLI.class.getResourceAsStream("/LanguageModels/" + languageCode + "." + modelType);
+        modelFile = HeLI.class.getResourceAsStream("LanguageModels/" + languageCode + "." + modelType);
 	
 		float totalFeatureNumber = 0;
 		float langamount = 0;
@@ -378,11 +404,7 @@ public class HeLI {
 		}
 	}
     
-	public static List<HeLIResult> identifyLanguage(String mysteryText, List<String> languageCodes) {
-    if(languageCodes == null) {
-      // default set of language codes
-      languageCodes = languageListFinal;
-    }
+	public static String identifyLanguage(String mysteryText) {
         
 		mysteryText = mysteryText.toLowerCase();
 		
@@ -400,7 +422,7 @@ public class HeLI {
 				mysteryCharSet = Character.UnicodeBlock.of(mysteryChar).toString();
 			}
 			catch (Exception e) {
-				return(Arrays.asList(new HeLIResult("xxx", null, 1.0f)));
+				return("xxx");
 			}
 			if (mysteryCharSet.startsWith("CJK")) {
 				if (lastWasCJK == 0 && lastWasSpace == 0) {
@@ -434,7 +456,7 @@ public class HeLI {
 		int strLength = mysteryText.length();
 		
 		if (strLength == 0) {
-			return(Arrays.asList(new HeLIResult("xxx", null, 1.0f)));
+			return("xxx");
 		}
 
 		String[] words = mysteryText.split(" ");
@@ -576,7 +598,7 @@ public class HeLI {
         
         TreeMap<Float, List<String>> HeLIScore = new TreeMap<>();
         
-        languageIterator = languageCodes.listIterator();
+        languageIterator = languageListFinal.listIterator();
         while(languageIterator.hasNext()) {
             Object element = languageIterator.next();
             String scoredLanguage = (String) element;
@@ -598,36 +620,27 @@ public class HeLI {
             winningLanguage = HeLIScore.firstEntry().getValue().get(n);
         }
         
-        List<HeLIResult> result = new ArrayList<>();
+        String result = "";
         
         if (numberTopLanguages == 1) {
-            result.add(new HeLIResult(winningLanguage, languages3to2.get(winningLanguage.substring(0, 3)), 1.0f));
+            result = winningLanguage;
         }
-        else {
-
-          //float confidence = 0;
-          int count = 1;
-          entries: for(Map.Entry<Float, List<String>> entry : HeLIScore.entrySet()) {
-            /*
+        
+        float confidence = 0;
+        int count = 1;
+        for (Map.Entry<Float, List<String>> entry : HeLIScore.entrySet()) {
             if (count == 2 && HeLIScore.firstEntry().getValue().size() == 1) {
                 confidence = entry.getKey() - languagePointsFinal.get(winningLanguage);
-            }*/
-            for(String lang : entry.getValue()) {
-              if(count <= numberTopLanguages) {
-                result.add(new HeLIResult(lang, languages3to2.get(lang.substring(0, 3)), entry.getKey()));
-              } else {
-                break entries;
-              }
-              count++;
             }
-          }
+            if (numberTopLanguages > 1 && count <= numberTopLanguages) {
+                result = result + entry.getValue() + "," + entry.getKey() + "\n";
+            }
+            count++;
         }
-
-        /*
+        
         if (useConfidence && numberTopLanguages == 1) {
             result = result + "\t" + confidence;
         }
-         */
         
 		return (result);
 	}
