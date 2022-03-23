@@ -1,0 +1,5 @@
+The languages-3-to-2.csv file was generated from the public-domain list of ISO-639
+codes published by the library of congress and accessible at https://datahub.io/core/language-codes:
+
+curl -L https://datahub.io/core/language-codes/r/language-codes-full.json | \
+  jq -r '.[] | if .alpha2 then ((."alpha3-t" // ."alpha3-b") + "," + .alpha2) else empty end' > languages-3-to-2.csv

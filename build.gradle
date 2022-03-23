@@ -1,0 +1,55 @@
+plugins {
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("io.micronaut.application") version "3.3.0"
+    id('com.google.cloud.tools.jib') version '3.1.4'
+}
+
+version = "0.1"
+group = "eu.elg.heli"
+
+repositories {
+    mavenCentral()
+    flatDir { dirs 'local-lib' }
+}
+
+dependencies {
+    annotationProcessor("io.micronaut:micronaut-http-validation")
+    implementation("io.micronaut:micronaut-http-client")
+    implementation("io.micronaut:micronaut-jackson-databind")
+    implementation("io.micronaut:micronaut-runtime")
+    implementation("io.micronaut.reactor:micronaut-reactor")
+    implementation("jakarta.annotation:jakarta.annotation-api")
+    runtimeOnly("ch.qos.logback:logback-classic")
+    implementation("io.micronaut:micronaut-validation")
+    implementation("eu.european-language-grid:lt-service-micronaut:1.0.0")
+
+    implementation(":HeLI")
+}
+
+
+application {
+    mainClass.set("eu.elg.heli.Application")
+}
+java {
+    sourceCompatibility = JavaVersion.toVersion("11")
+    targetCompatibility = JavaVersion.toVersion("11")
+}
+
+graalvmNative {
+    toolchainDetection = false
+    binaries {
+        main {
+            buildArgs.add("--initialize-at-build-time=eu.elg.heli.Application,eu.elg.heli.impl")
+        }
+    }
+}
+micronaut {
+    runtime("netty")
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("eu.elg.heli.*")
+    }
+}
+
+

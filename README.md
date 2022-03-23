@@ -1,0 +1,6 @@
+HeLI Language Identifier for ELG
+================================
+
+This is a modified version of the [HeLI-OTS](https://zenodo.org/record/6077089) "off-the-shelf" language identification tool that offers an HTTP API compatible with the requirements of the [European Language Grid](https://www.european-language-grid.eu).  The original HeLI operates only as a single-threaded command-line tool - this project makes a few minor modifications to the original `HeLI.java` to make it possible to invoke the HeLI language ID logic as a method call within a larger application, then defines a simple ELG-compatible wrapper around this method call using the [ELG Micronaut LT Service helper](https://gitlab.com/european-language-grid/platform/lt-service-micronaut).
+
+Docker images for HeLI can be built in two ways, either via `jib` to build an image that includes a normal JVM, or via `./gradlew dockerBuildNative` to build a GraalVM native image.  The native image runs the HeLI initialization routine at image build time rather than container startup, so it produces a larger Docker image but one that starts up more quickly (~10-15 seconds rather than ~25-30).
