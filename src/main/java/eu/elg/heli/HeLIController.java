@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
 @Controller("/process")
 public class HeLIController extends LTService<TextRequest, LTService.Context> {
 
+  private static final Pattern LINE_PATTERN = Pattern.compile("^.+$", Pattern.MULTILINE);
+
   @Override
   protected Response<?> handleSync(TextRequest request, Context ctx) throws Exception {
     boolean includeOrig = false;
@@ -45,7 +47,7 @@ public class HeLIController extends LTService<TextRequest, LTService.Context> {
 
     // run language detection on each line of the input text
     int lineStart = 0;
-    Matcher m = Pattern.compile("^.+$", Pattern.MULTILINE).matcher(request.getContent());
+    Matcher m = LINE_PATTERN.matcher(request.getContent());
     Map<String, List<AnnotationObject>> annotations = new HashMap<>();
     while(m.find()) {
       List<HeLIResult> result = HeLI.identifyLanguage(m.group(), languages);
