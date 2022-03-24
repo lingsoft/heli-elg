@@ -32,7 +32,7 @@ public class HeLIController extends LTService<TextRequest, LTService.Context> {
       }
       if(request.getParams().containsKey("languageSet")) {
         Object langSet = request.getParams().get("languageSet");
-        if(langSet instanceof List && ((List<?>) langSet).size() > 0 && ((List<?>) langSet).stream().allMatch((v) -> (v instanceof String))) {
+        if(langSet instanceof List && ((List<?>) langSet).size() > 0 && ((List<?>) langSet).stream().allMatch(v -> v instanceof String)) {
           languages = (List<String>) langSet;
         } else {
           throw new ELGException(StandardMessages.elgServiceInternalError("\"languageSet\" parameter must be a list of strings"));
