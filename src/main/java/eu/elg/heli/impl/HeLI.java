@@ -51,6 +51,7 @@ public class HeLI {
     private static TreeMap<String, TreeMap<String, Float>> gramDict;
     private static TreeMap<String, TreeMap<String, Float>> wordDict;
 	private static List<String> languageList = new ArrayList<String>();
+    // IR - made public to be accessible from HeLIController
     public static final List<String> languageListFinal = new ArrayList<String>();
     private static List<String> languageListFinalOriginal = new ArrayList<String>();
 		// IR - added 3-to-2 code mapping
@@ -166,7 +167,7 @@ public class HeLI {
 		BufferedReader reader = null;
 		
 		try {
-            reader = new BufferedReader(new InputStreamReader(in));
+            reader = new BufferedReader(new InputStreamReader(in, "UTF-8")); // IR added charset
 			String text = null;
 			while ((text = reader.readLine()) != null) {
                 if (!useRelevantLanguages) {
@@ -325,7 +326,7 @@ public class HeLI {
 	
 		BufferedReader reader = null;
 		try {
-            reader = new BufferedReader(new InputStreamReader(modelFile));
+            reader = new BufferedReader(new InputStreamReader(modelFile, "UTF-8")); //IR added charset
 			String text = null;
             
             text = reader.readLine();
@@ -400,7 +401,7 @@ public class HeLI {
 				mysteryCharSet = Character.UnicodeBlock.of(mysteryChar).toString();
 			}
 			catch (Exception e) {
-				return(Arrays.asList(new HeLIResult("xxx", null, 1.0f)));
+				return(List.of(new HeLIResult("xxx", null, 1.0f)));
 			}
 			if (mysteryCharSet.startsWith("CJK")) {
 				if (lastWasCJK == 0 && lastWasSpace == 0) {
@@ -434,7 +435,7 @@ public class HeLI {
 		int strLength = mysteryText.length();
 		
 		if (strLength == 0) {
-			return(Arrays.asList(new HeLIResult("xxx", null, 1.0f)));
+			return(List.of(new HeLIResult("xxx", null, 1.0f)));
 		}
 
 		String[] words = mysteryText.split(" ");
