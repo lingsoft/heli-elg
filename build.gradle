@@ -47,6 +47,9 @@ graalvmNative {
     binaries {
         main {
             buildArgs.add("--initialize-at-build-time=eu.elg.heli.Application,eu.elg.heli.impl")
+            buildArgs.add("-H:-DeadlockWatchdogExitOnTimeout") // don't exit on watchdog timeout
+            buildArgs.add("-H:DeadlockWatchdogInterval=0") // don't run the watchdog at all
+            buildArgs.add("-J-Xmx32G")
         }
     }
 }
