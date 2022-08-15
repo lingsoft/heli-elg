@@ -1,6 +1,6 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("io.micronaut.application") version "3.3.0"
+    id("io.micronaut.application") version "3.4.1"
     id('com.google.cloud.tools.jib') version '3.1.4'
 }
 
@@ -9,6 +9,8 @@ group = "eu.european-language-grid"
 
 repositories {
     mavenCentral()
+    //---- Added ELG GitLab maven repository for snapshot version of lt-service-micronaut
+    maven { url "https://gitlab.com/api/v4/groups/european-language-grid/-/packages/maven/" }
     flatDir { dirs 'local-lib' }
 }
 
@@ -21,7 +23,7 @@ dependencies {
     implementation("jakarta.annotation:jakarta.annotation-api")
     runtimeOnly("ch.qos.logback:logback-classic")
     implementation("io.micronaut:micronaut-validation")
-    implementation("eu.european-language-grid:lt-service-micronaut:1.0.0")
+    implementation("eu.european-language-grid:lt-service-micronaut:1.1.1-SNAPSHOT")
 
     implementation(":HeLI")
 }
@@ -33,6 +35,11 @@ application {
 java {
     sourceCompatibility = JavaVersion.toVersion("11")
     targetCompatibility = JavaVersion.toVersion("11")
+}
+
+dockerfileNative {
+    // default alpine base image is not multiarch
+    baseImage('debian:10-slim')
 }
 
 graalvmNative {

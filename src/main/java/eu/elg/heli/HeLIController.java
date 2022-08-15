@@ -10,6 +10,7 @@ import eu.elg.model.StandardMessages;
 import eu.elg.model.StatusMessage;
 import eu.elg.model.requests.TextRequest;
 import eu.elg.model.responses.AnnotationsResponse;
+import eu.elg.model.util.TextOffsetsHelper;
 import io.micronaut.http.annotation.Controller;
 
 import java.util.*;
@@ -45,6 +46,12 @@ public class HeLIController extends LTService<TextRequest, LTService.Context> {
       }
     }
 
+    // use TextOffsetsHelper to map between Java string indices from the Matcher
+    // (which are UTF-16, so supplementary characters such as Emoji count as two
+    // positions) and the ELG API annotations format (which counts in Unicode
+    // characters, so supplementary code points count as one position).
+    TextOffsetsHelper helper = new TextOffsetsHelper(request.getContent());
+
     // run language detection on each line of the input text
     int lineStart = 0;
     Matcher m = LINE_PATTERN.matcher(request.getContent());
@@ -52,7 +59,7 @@ public class HeLIController extends LTService<TextRequest, LTService.Context> {
     while(m.find()) {
       List<HeLIResult> result = HeLI.identifyLanguage(m.group(), languages);
       if(result.size() > 0) {
-        AnnotationObject ann = new AnnotationObject().withOffsets(m.start(), m.end()).withFeatures("lang3", result.get(0).language3);
+        AnnotationObject ann = helper.annotationWithOffsets(m.start(), m.end()).withFeatures("lang3", result.get(0).language3);
         if(result.get(0).language2 != null) {
           ann.withFeature("lang2", result.get(0).language2);
         }
