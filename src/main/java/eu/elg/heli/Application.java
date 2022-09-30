@@ -7,7 +7,7 @@ public class Application {
 
     static {
         // set up HeLI in a static initializer so it can be initialized at compile time by GraalVM
-        HeLI.setup("-t", "10");
+        HeLI.setup();
     }
 
     public static void main(String[] args) {

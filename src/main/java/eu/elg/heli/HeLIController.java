@@ -4,78 +4,65 @@ import eu.elg.heli.impl.HeLI;
 import eu.elg.heli.impl.HeLIResult;
 import eu.elg.ltservice.ELGException;
 import eu.elg.ltservice.LTService;
-import eu.elg.model.AnnotationObject;
 import eu.elg.model.Response;
 import eu.elg.model.StandardMessages;
 import eu.elg.model.StatusMessage;
 import eu.elg.model.requests.TextRequest;
-import eu.elg.model.responses.AnnotationsResponse;
-import eu.elg.model.util.TextOffsetsHelper;
+import eu.elg.model.responses.ClassificationClass;
+import eu.elg.model.responses.ClassificationResponse;
 import io.micronaut.http.annotation.Controller;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 
 @Controller("/process")
 public class HeLIController extends LTService<TextRequest, LTService.Context> {
 
-  private static final Pattern LINE_PATTERN = Pattern.compile("^.+$", Pattern.MULTILINE);
-
   @Override
   protected Response<?> handleSync(TextRequest request, Context ctx) throws Exception {
-    boolean includeOrig = false;
+    int nbest = 5;
     List<String> languages = null;
     if(request.getParams() != null) {
-      if(request.getParams().containsKey("includeOrig") &&
-              Boolean.parseBoolean(Objects.toString(request.getParams().get("includeOrig")))) {
-        includeOrig = true;
+      if(request.getParams().containsKey("nbest")) {
+        String nstr = "";
+        try {
+            nstr = Objects.toString(request.getParams().get("nbest"));
+            int nb = Integer.parseInt(nstr);
+            nbest = nb;
+        } catch (Exception e) {
+          throw new ELGException(new StatusMessage().withCode("heli.parameter.invalid").withText("can not parse \"nbest\" to integer: {0}").withParams(nstr));
+        }
       }
-      if(request.getParams().containsKey("languageSet")) {
-        Object langSet = request.getParams().get("languageSet");
+      if(request.getParams().containsKey("languages")) {
+        Object langSet = request.getParams().get("languages");
         if(langSet instanceof List && ((List<?>) langSet).size() > 0 && ((List<?>) langSet).stream().allMatch(v -> v instanceof String)) {
           languages = (List<String>) langSet;
         } else {
-          throw new ELGException(StandardMessages.elgServiceInternalError("\"languageSet\" parameter must be a list of strings"));
+          throw new ELGException(StandardMessages.elgServiceInternalError("\"languages\" parameter must be a list of strings"));
         }
         List<String> invalidLangs = new ArrayList<>(languages);
         invalidLangs.removeAll(HeLI.languageListFinal);
         if(invalidLangs.size() > 0) {
-          throw new ELGException(new StatusMessage().withCode("heli.parameter.languageSet.partial.values.invalid").withText("\"languageSet\" parameter contains invalid languages: {0}").withParams(String.join(",", invalidLangs)));
+          throw new ELGException(new StatusMessage().withCode("heli.parameter.invalid").withText("\"languages\" parameter contains invalid languages: {0}").withParams(String.join(",", invalidLangs)));
         }
       }
     }
 
-    // use TextOffsetsHelper to map between Java string indices from the Matcher
-    // (which are UTF-16, so supplementary characters such as Emoji count as two
-    // positions) and the ELG API annotations format (which counts in Unicode
-    // characters, so supplementary code points count as one position).
-    TextOffsetsHelper helper = new TextOffsetsHelper(request.getContent());
-
-    // run language detection on each line of the input text
-    int lineStart = 0;
-    Matcher m = LINE_PATTERN.matcher(request.getContent());
-    Map<String, List<AnnotationObject>> annotations = new HashMap<>();
-    while(m.find()) {
-      List<HeLIResult> result = HeLI.identifyLanguage(m.group(), languages);
-      if(result.size() > 0) {
-        AnnotationObject ann = helper.annotationWithOffsets(m.start(), m.end()).withFeatures("lang3", result.get(0).language3);
-        if(result.get(0).language2 != null) {
-          ann.withFeature("lang2", result.get(0).language2);
+    List<ClassificationClass> classes = new ArrayList<>();
+    try {
+        List<HeLIResult> results = HeLI.identifyLanguage(request.getContent(), languages, nbest);
+        for (HeLIResult res : results) {
+            ClassificationClass cl = new ClassificationClass();
+            cl.withClassName(res.language).withScore(res.score);
+            classes.add(cl);
         }
-        if(result.size() > 1) {
-          // confidence is the difference in score between the first and second languages
-          ann.withFeature("confidence", result.get(1).score - result.get(0).score);
-        } else {
-          ann.withFeature("confidence", 0.0f);
-        }
-        if(includeOrig) {
-          ann.withFeature("original_text", m.group());
-        }
-        annotations.computeIfAbsent(result.get(0).language3, (l) -> new ArrayList<>()).add(ann);
-      }
+    } catch (Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        String exceptionAsString = sw.toString();
+        throw new ELGException(new StatusMessage().withCode("heli.internal.error").withText("Something went wrong: {0}").withParams(exceptionAsString));
     }
-
-    return new AnnotationsResponse().withAnnotations(annotations);
+    return new ClassificationResponse().withClasses(classes);
   }
 }
