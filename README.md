@@ -1,8 +1,9 @@
 # ELG API for HeLI-OTS language identifier
 
-This is a modified version of the [HeLI-OTS](https://zenodo.org/record/7066611)
-"off-the-shelf" language identification tool that offers an HTTP API compatible
-with the requirements of the [European Language Grid](https://www.european-language-grid.eu).
+[HeLI-OTS](https://zenodo.org/record/7066611) "off-the-shelf" language identifier
+has language models for 200 languages.
+This modified version offers an HTTP API compatible with the requirements of the
+[European Language Grid](https://www.european-language-grid.eu).
 The original HeLI operates only as a single-threaded command-line tool - this project
 makes a few minor modifications to the original `HeLI.java` to make it possible to invoke
 the HeLI language ID logic as a method call within a larger application, then defines a
@@ -28,7 +29,7 @@ and are released under the same Apache Licence 2.0. His version is forked to the
 
 This version was developed in EU's CEF project:
 [Microservices at your service](https://www.lingsoft.fi/en/microservices-at-your-service-bridging-gap-between-nlp-research-and-industry).
-And is released under the same Apache License 2.0.
+And it is released under the same Apache License 2.0.
 
 ## Development
 
@@ -74,9 +75,12 @@ Parameters are optional, and can be used to change the number of top languages
 or to restrict the language set.
 
 - `nbest` (integer, default=5)
-- `languages` (list of strings, default=all) Use ISO 639-3 language codes.
+- `languages` (list of strings, default=all languages). Use ISO 639-3 language codes.
 
 #### Response
+
+The identifier will return *nbest* languages (ISO 639-3 codes) followed by their
+languages scores (lower is better).
 
 ```json
 {
@@ -95,8 +99,6 @@ or to restrict the language set.
   }
 }
 ```
-
-Add some info about ISO codes and scores (+ confidence).
 
 ### Integration tests
 
