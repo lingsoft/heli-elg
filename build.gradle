@@ -37,6 +37,12 @@ java {
     targetCompatibility = JavaVersion.toVersion("11")
 }
 
+tasks.named("dockerfile") {
+   args("-XX:+UseG1GC")
+   args("-Xms2g")
+   args("-Xmx2g")
+}
+
 dockerfileNative {
     // default alpine base image is not multiarch
     baseImage('debian:10-slim')
