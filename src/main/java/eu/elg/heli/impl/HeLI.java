@@ -43,8 +43,6 @@ package eu.elg.heli.impl;
 import java.io.*;
 import java.util.*;
 
-//import heli.HeLIResult;
-
 public class HeLI {
 
     private static TreeMap<String, TreeMap<String, Float>> gramDict;
@@ -79,7 +77,6 @@ public class HeLI {
     private static int numberTopLanguages = 5;
 		
 	public static void setup() {
-        // useRelevantLanguages, relevantLanguages, numberTopLanguages
         String relevantLanguages = "";
         
         InputStream in = HeLI.class.getResourceAsStream("/languagelist");
@@ -232,10 +229,7 @@ public class HeLI {
         if (languageCodes == null) {
             languageCodes = languageListFinal;
         }
-        // TODO Fix languageList based on languageCodes (not all languages)
-        //languageList = languageCodes;
-        //System.out.println(languageList);
-        //languageListFinal = languageListFinalOriginal;
+        // TODO Fix languageList to be based on languageCodes (not all languages).
         numberTopLanguages = bestLangs;
 		mysteryText = mysteryText.toLowerCase();
 		
@@ -407,7 +401,6 @@ public class HeLI {
 		while(languageIterator.hasNext()) {
 			Object element = languageIterator.next();
 			String scoredLanguage = (String) element;
-            //System.out.println(scoredLanguage);
 			languagePoints.put(scoredLanguage, (languagePoints.get(scoredLanguage)/wordNumber));
 			if ((100/strLength*CJKcharacterAmount) > 50) {
 				if (!scoredLanguage.equals("jpn") && !scoredLanguage.equals("kor") && !scoredLanguage.equals("cmn")) {
@@ -431,8 +424,6 @@ public class HeLI {
         
         TreeMap<Float, List<String>> HeLIScore = new TreeMap<>();
         
-        //languageIterator = languageListFinal.listIterator();
-        //languageIterator = languageList.listIterator();
         languageIterator = languageCodes.listIterator();
         while(languageIterator.hasNext()) {
             Object element = languageIterator.next();
